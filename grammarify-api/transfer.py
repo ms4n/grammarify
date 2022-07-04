@@ -59,3 +59,28 @@ def _casual_to_formal(input_sentence, device, quality_filter, max_candidates=5):
         return ranked_sentences[0][0]
     else:
         return None
+
+
+def _correct_grammar(input_sentence, max_candidates=1):
+    if model_loaded:
+        correction_prefix = "gec: "
+        input_sentence = correction_prefix + input_sentence
+        input_ids = grammar_tokenizer.encode(input_sentence, return_tensors='pt')
+        input_ids = input_ids.to(torch_device)
+
+        predictions = grammar_model.generate(
+            input_ids,
+            do_sample=True,
+            max_length=128,
+            num_beams=7,
+            early_stopping=True,
+            num_return_sequences=max_candidates)
+
+        corrected = set()
+        for prediction in predictions:
+            corrected.add(grammar_tokenizer.decode(prediction, skip_special_tokens=True).strip())
+
+        return corrected
+    else:
+        print("Model is not loaded.")
+        return None
